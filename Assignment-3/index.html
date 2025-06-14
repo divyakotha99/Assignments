@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pong Game</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #121212;
+      font-family: Arial, sans-serif;
+      color: #e0e0e0;
+    }
+    canvas {
+      border: 2px solid #4caf50;
+      background-color: #000;
+    }
+    #score {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      font-size: 1.5rem;
+      color: #90ee90;
+    }
+    #overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(18, 18, 18, 0.9);
+      display: flex; justify-content: center; align-items: center;
+      color: #4caf50; font-weight: 700; font-size: 2rem;
+      visibility: hidden; opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: 10;
+    }
+    #overlay.visible {
+      visibility: visible;
+      opacity: 1;
+    }
+    button {
+      padding: 12px 32px;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #121212;
+      background: #4caf50;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background: #66bb6a;
+    }
+    #startBtn {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.5rem;
+      color: #4caf50;
+      background: none;
+      border: 2px solid #4caf50;
+      border-radius: 8px;
+      padding: 10px 20px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    #startBtn:hover {
+      background: #66bb6a;
+    }
+  </style>
+</head>
+<body>
+  <div id="score">Player 1: 0 | Player 2: 0</div>
+  <canvas id="game" width="800" height="400"></canvas>
+  <div id="overlay">
+    <div id="gameOverMessage">Game Over!</div>
+    <button id="restartBtn">Restart</button>
+  </div>
+  <button id="startBtn">Start Game</button>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+
+    let paddleWidth = 10, paddleHeight = 100;
+    let ballSize = 10;
+    let player1Score = 0, player2Score = 0;
+    let ballSpeedX = 5, ballSpeedY = 5;
+    let ballX = canvas.width / 2, ballY = canvas.height / 2;
+    let paddle1Y = (canvas.height - paddleHeight) / 2, paddle2Y = (canvas.height - paddleHeight) / 2;
+    let gameOver = false;
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#4caf50';
+      ctx.fillRect(0, paddle1Y, paddleWidth, paddleHeight); // Player 1 paddle
+      ctx.fillRect(canvas.width - paddleWidth, paddle2Y, paddleWidth, paddleHeight); // Player 2 paddle
+
+      ctx.fillStyle = '#ff0000';
+      ctx.fillRect(ballX, ballY, ballSize, ballSize); // Ball
+
+      document.getElementById('score').textContent = `Player 1: ${player1Score} | Player 2: ${player2Score}`;
+    }
+
+    function update() {
+      if (gameOver) {
+        document.getElementById('overlay').classList.add('visible');
+        return;
+      }
+
+      ballX += ballSpeedX;
+      ballY += ballSpeedY;
+
+      // Ball collision with top and bottom
+      if (ballY <= 0 || ballY + ballSize >= canvas.height) {
+        ballSpeedY = -ballSpeedY;
+      }
+
+      // Ball collision with paddles
+      if (ballX <= paddleWidth && ballY + ballSize >= paddle1Y && ballY <= paddle1Y + paddleHeight) {
+        ballSpeedX = -ballSpeedX;
+      } else if (ballX + ballSize >= canvas.width - paddleWidth && ballY + ballSize >= paddle2Y && ballY <= paddle2Y + paddleHeight) {
+        ballSpeedX = -ballSpeedX;
+      }
+
+      // Ball out of bounds
+      if (ballX < 0) {
+        player2Score++;
+        resetBall();
+      } else if (ballX > canvas.width) {
+        player1Score++;
+        resetBall();
+      }
+
+      draw();
+      requestAnimationFrame(update);
+    }
+
+    function resetBall() {
+      ballX = canvas.width / 2;
+      ballY = canvas.height / 2;
+      ballSpeedX = -ballSpeedX; // Change direction
+      if (player1Score >= 5 || player2Score >= 5) {
+        gameOver = true;
+      }
+    }
+
+    document.addEventListener('keydown', (event) => {
+      // Prevent default behavior for arrow keys
+      if (event.key === 'ArrowUp' || event.key === 'ArrowDown' || event.key === 'w' || event.key === 's') {
+        event.preventDefault();
+      }
+
+      if (event.key === 'w' && paddle1Y > 0) paddle1Y -= 20; // Player 1 up
+      if (event.key === 's' && paddle1Y < canvas.height - paddleHeight) paddle1Y += 20; // Player 1 down
+      if (event.key === 'ArrowUp' && paddle2Y > 0) paddle2Y -= 20; // Player 2 up
+      if (event.key === 'ArrowDown' && paddle2Y < canvas.height - paddleHeight) paddle2Y += 20; // Player 2 down
+    });
+
+    document.getElementById('restartBtn').addEventListener('click', () => {
+      player1Score = 0;
+      player2Score = 0;
+      paddle1Y = (canvas.height - paddleHeight) / 2;
+      paddle2Y = (canvas.height - paddleHeight) / 2;
+      ballX = canvas.width / 2;
+      ballY = canvas.height / 2;
+      ballSpeedX = 5;
+      ballSpeedY = 5;
+      gameOver = false;
+      document.getElementById('overlay').classList.remove('visible');
+      update();
+    });
+
+    document.getElementById('startBtn').addEventListener('click', () => {
+      document.getElementById('startBtn').style.display = 'none'; // Hide start button
+      update(); // Start the game
+    });
+  </script>
+</body>
+</html>
